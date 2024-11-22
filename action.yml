@@ -1,0 +1,30 @@
+---
+name: "Setup Docker"
+description: "Setup Docker and login to Azure Container Registry"
+author: "SBU Platform"
+inputs:
+  acr_repo:
+    description: "Azure Container Registry Repository"
+    required: true
+    default: "acrsbsharedservices"
+runs:
+  using: "composite"
+  steps:
+  - name: "Setup AZ CLI & Login"
+    uses: SE-Sustainability-Business/sbaction-azsetup@v1
+  - name: "Is Docker Buildx Installed"
+    run: |
+      if [ -z "$(docker buildx)" ]; then
+        echo "docker_install=true" >> $GITHUB_ENV
+      fi
+    shell: bash
+  - name: Setup Docker Buildx
+    uses: docker/setup-buildx-action@v3
+    condition: ${{ env.docker_install == 'true' }}
+  - name: Docker Login
+    run: az acr login --name ${{ inputs.acr_repo }}
+    shell: bash
+  - name: Pull Image Tag
+    run: |
+      echo "image_tag=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_ENV
+    shell: bash
